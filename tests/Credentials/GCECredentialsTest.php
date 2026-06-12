@@ -40,6 +40,12 @@ class GCECredentialsTest extends BaseTest
 {
     use ProphecyTrait;
 
+    protected function tearDown(): void
+    {
+        HttpClientCache::setHttpClient(null);
+        parent::tearDown();
+    }
+
     public function testOnGceMetadataFlavorHeader()
     {
         $hasHeader = false;
@@ -74,6 +80,9 @@ class GCECredentialsTest extends BaseTest
 
     public function testOnGCEIsFalseOnClientErrorStatus()
     {
+        if (GCECredentials::onGCE()) {
+            $this->markTestSkipped('This test only works while running outside of GCE');
+        }
         // simulate retry attempts by returning multiple 400s
         $httpHandler = getHandler([
             new Response(400),
@@ -85,6 +94,9 @@ class GCECredentialsTest extends BaseTest
 
     public function testOnGCEIsFalseOnServerErrorStatus()
     {
+        if (GCECredentials::onGCE()) {
+            $this->markTestSkipped('This test only works while running outside of GCE');
+        }
         // simulate retry attempts by returning multiple 500s
         $httpHandler = getHandler([
             new Response(500),
@@ -219,6 +231,9 @@ class GCECredentialsTest extends BaseTest
 
     public function testFetchAuthTokenShouldBeEmptyIfNotOnGCE()
     {
+        if (GCECredentials::onGCE()) {
+            $this->markTestSkipped('This test only works while running outside of GCE');
+        }
         // simulate retry attempts by returning multiple 500s
         $httpHandler = getHandler([
             new Response(500),
@@ -251,10 +266,15 @@ class GCECredentialsTest extends BaseTest
             'token_type' => 'Bearer',
         ];
         $jsonTokens = json_encode($wantedTokens);
-        $httpHandler = getHandler([
-            new Response(200, [GCECredentials::FLAVOR_HEADER => 'Google']),
-            new Response(200, [], Utils::streamFor($jsonTokens)),
-        ]);
+        $timesCalled = 0;
+        $httpHandler = function ($request) use (&$timesCalled, $jsonTokens) {
+            $timesCalled++;
+            $this->assertEquals('Google', $request->getHeaderLine(GCECredentials::FLAVOR_HEADER));
+            if ($timesCalled == 1) {
+                return new Psr7\Response(200, [GCECredentials::FLAVOR_HEADER => 'Google']);
+            }
+            return new Psr7\Response(200, [], Utils::streamFor($jsonTokens));
+        };
         $g = new GCECredentials();
         $receivedToken = $g->fetchAuthToken($httpHandler);
         $this->assertEquals(
@@ -271,6 +291,7 @@ class GCECredentialsTest extends BaseTest
         $timesCalled = 0;
         $httpHandler = function ($request) use (&$timesCalled, $expectedToken) {
             $timesCalled++;
+            $this->assertEquals('Google', $request->getHeaderLine(GCECredentials::FLAVOR_HEADER));
             if ($timesCalled == 1) {
                 return new Psr7\Response(200, [GCECredentials::FLAVOR_HEADER => 'Google']);
             }
@@ -344,10 +365,15 @@ class GCECredentialsTest extends BaseTest
     public function testGetLastReceivedTokenShouldWorkWithIdToken()
     {
         $idToken = '123asdfghjkl';
-        $httpHandler = getHandler([
-            new Response(200, [GCECredentials::FLAVOR_HEADER => 'Google']),
-            new Response(200, [], Utils::streamFor($idToken)),
-        ]);
+        $timesCalled = 0;
+        $httpHandler = function ($request) use (&$timesCalled, $idToken) {
+            $timesCalled++;
+            $this->assertEquals('Google', $request->getHeaderLine(GCECredentials::FLAVOR_HEADER));
+            if ($timesCalled == 1) {
+                return new Psr7\Response(200, [GCECredentials::FLAVOR_HEADER => 'Google']);
+            }
+            return new Psr7\Response(200, [], Utils::streamFor($idToken));
+        };
         $g = new GCECredentials(null, null, 'https://example.test.com');
         $g->fetchAuthToken($httpHandler);
         $this->assertEquals(
@@ -375,6 +401,9 @@ class GCECredentialsTest extends BaseTest
 
     public function testGetClientNameShouldBeEmptyIfNotOnGCE()
     {
+        if (GCECredentials::onGCE()) {
+            $this->markTestSkipped('This test only works while running outside of GCE');
+        }
         // simulate retry attempts by returning multiple 500s
         $httpHandler = getHandler([
             new Response(500),
@@ -570,6 +599,7 @@ class GCECredentialsTest extends BaseTest
         $timesCalled = 0;
         $httpHandler = function ($request) use (&$timesCalled, $expected) {
             $timesCalled++;
+            $this->assertEquals('Google', $request->getHeaderLine(GCECredentials::FLAVOR_HEADER));
             if ($timesCalled == 1) {
                 return new Psr7\Response(200, [GCECredentials::FLAVOR_HEADER => 'Google']);
             }
@@ -594,6 +624,7 @@ class GCECredentialsTest extends BaseTest
         $timesCalled = 0;
         $httpHandler = function ($request) use (&$timesCalled, $expected) {
             $timesCalled++;
+            $this->assertEquals('Google', $request->getHeaderLine(GCECredentials::FLAVOR_HEADER));
             if ($timesCalled == 1) {
                 return new Psr7\Response(200, [GCECredentials::FLAVOR_HEADER => 'Google']);
             }
@@ -629,6 +660,7 @@ class GCECredentialsTest extends BaseTest
         $timesCalled = 0;
         $httpHandler = function ($request) use (&$timesCalled, $expected) {
             $timesCalled++;
+            $this->assertEquals('Google', $request->getHeaderLine(GCECredentials::FLAVOR_HEADER));
             if ($timesCalled == 1) {
                 return new Psr7\Response(200, [GCECredentials::FLAVOR_HEADER => 'Google']);
             }
@@ -654,6 +686,7 @@ class GCECredentialsTest extends BaseTest
         $timesCalled = 0;
         $httpHandler = function ($request) use (&$timesCalled, $expected) {
             $timesCalled++;
+            $this->assertEquals('Google', $request->getHeaderLine(GCECredentials::FLAVOR_HEADER));
             $this->assertEquals(
                 '/computeMetadata/v1/universe/universe-domain',
                 $request->getUri()->getPath()
@@ -676,6 +709,7 @@ class GCECredentialsTest extends BaseTest
 
         // Pretend we are on GCE and mock the MDS returning an empty string for the universe domain.
         $httpHandler = function ($request) {
+            $this->assertEquals('Google', $request->getHeaderLine(GCECredentials::FLAVOR_HEADER));
             $this->assertEquals(
                 '/computeMetadata/v1/universe/universe-domain',
                 $request->getUri()->getPath()

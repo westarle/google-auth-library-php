@@ -78,6 +78,9 @@ class ApplicationDefaultCredentialsTest extends TestCase
 
     public function testFailsIfNotOnGceAndNoDefaultFileFound()
     {
+        if (\Google\Auth\Credentials\GCECredentials::onGCE()) {
+            $this->markTestSkipped('This test only works while running outside of GCE');
+        }
         $this->expectException(DomainException::class);
 
         setHomeEnv(__DIR__ . '/not_exist_fixtures');
@@ -88,7 +91,18 @@ class ApplicationDefaultCredentialsTest extends TestCase
             new Response(500)
         ]);
 
-        ApplicationDefaultCredentials::getCredentials('a scope', $httpHandler);
+        $mockCacheItem = $this->prophesize('Psr\Cache\CacheItemInterface');
+        $mockCacheItem->isHit()->willReturn(true);
+        $mockCacheItem->get()->willReturn(false);
+        $mockCache = $this->prophesize('Psr\Cache\CacheItemPoolInterface');
+        $mockCache->getItem(GCECache::GCE_CACHE_KEY)->willReturn($mockCacheItem->reveal());
+
+        ApplicationDefaultCredentials::getCredentials(
+            'a scope',
+            $httpHandler,
+            null,
+            $mockCache->reveal()
+        );
     }
 
     public function testSuccedsIfNoDefaultFilesButIsOnGCE()
@@ -293,6 +307,9 @@ class ApplicationDefaultCredentialsTest extends TestCase
 
     public function testGetMiddlewareFailsIfNotOnGceAndNoDefaultFileFound()
     {
+        if (\Google\Auth\Credentials\GCECredentials::onGCE()) {
+            $this->markTestSkipped('This test only works while running outside of GCE');
+        }
         $this->expectException(DomainException::class);
 
         setHomeEnv(__DIR__ . '/not_exist_fixtures');
@@ -304,7 +321,18 @@ class ApplicationDefaultCredentialsTest extends TestCase
             new Response(500)
         ]);
 
-        ApplicationDefaultCredentials::getMiddleware('a scope', $httpHandler);
+        $mockCacheItem = $this->prophesize('Psr\Cache\CacheItemInterface');
+        $mockCacheItem->isHit()->willReturn(true);
+        $mockCacheItem->get()->willReturn(false);
+        $mockCache = $this->prophesize('Psr\Cache\CacheItemPoolInterface');
+        $mockCache->getItem(GCECache::GCE_CACHE_KEY)->willReturn($mockCacheItem->reveal());
+
+        ApplicationDefaultCredentials::getMiddleware(
+            'a scope',
+            $httpHandler,
+            null,
+            $mockCache->reveal()
+        );
     }
 
     public function testGetMiddlewareWithCacheOptions()
@@ -475,6 +503,9 @@ class ApplicationDefaultCredentialsTest extends TestCase
 
     public function testGetIdTokenCredentialsFailsIfNotOnGceAndNoDefaultFileFound()
     {
+        if (\Google\Auth\Credentials\GCECredentials::onGCE()) {
+            $this->markTestSkipped('This test only works while running outside of GCE');
+        }
         $this->expectException(DomainException::class);
         $this->expectExceptionMessage('Your default credentials were not found');
 
@@ -487,9 +518,17 @@ class ApplicationDefaultCredentialsTest extends TestCase
             new Response(500)
         ]);
 
+        $mockCacheItem = $this->prophesize('Psr\Cache\CacheItemInterface');
+        $mockCacheItem->isHit()->willReturn(true);
+        $mockCacheItem->get()->willReturn(false);
+        $mockCache = $this->prophesize('Psr\Cache\CacheItemPoolInterface');
+        $mockCache->getItem(GCECache::GCE_CACHE_KEY)->willReturn($mockCacheItem->reveal());
+
         ApplicationDefaultCredentials::getIdTokenCredentials(
             $this->targetAudience,
-            $httpHandler
+            $httpHandler,
+            null,
+            $mockCache->reveal()
         );
     }
 
