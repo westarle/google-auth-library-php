@@ -194,6 +194,29 @@ class CredentialsLoaderTest extends TestCase
         $this->assertArrayHasKey('type', $json);
         $this->assertEquals('getenv', $json['type']);
     }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testLoadJsonFromEnvMalformedThrowsException(): void
+    {
+        $this->expectException(\DomainException::class);
+        $this->expectExceptionMessage('Unable to read the credential file specified by  GOOGLE_APPLICATION_CREDENTIALS:');
+
+        putenv(CredentialsLoader::ENV_VAR . '=' . __DIR__ . '/fixtures/fixtures7/malformed.json');
+
+        CredentialsLoader::fromEnv();
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testFromWellKnownFileReturnsNullIfHomeUnset(): void
+    {
+        setHomeEnv(null);
+
+        $this->assertNull(CredentialsLoader::fromWellKnownFile());
+    }
 }
 
 class TestCredentialsLoader extends CredentialsLoader

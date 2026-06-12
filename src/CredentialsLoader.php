@@ -87,7 +87,16 @@ abstract class CredentialsLoader implements
         }
         $jsonKey = file_get_contents($path);
 
-        return json_decode((string) $jsonKey, true);
+        $json = json_decode((string) $jsonKey, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $cause = 'json_decode error: ' . json_last_error_msg();
+            throw new \DomainException(self::unableToReadEnv($cause));
+        }
+        if (!is_array($json)) {
+            $cause = 'json_decode returned a non-array value';
+            throw new \DomainException(self::unableToReadEnv($cause));
+        }
+        return $json;
     }
 
     /**
@@ -105,7 +114,11 @@ abstract class CredentialsLoader implements
     public static function fromWellKnownFile()
     {
         $rootEnv = self::isOnWindows() ? 'APPDATA' : 'HOME';
-        $path = [self::getEnv($rootEnv)];
+        $rootValue = self::getEnv($rootEnv);
+        if (empty($rootValue)) {
+            return null;
+        }
+        $path = [$rootValue];
         if (!self::isOnWindows()) {
             $path[] = self::NON_WINDOWS_WELL_KNOWN_PATH_BASE;
         }
@@ -284,7 +297,11 @@ abstract class CredentialsLoader implements
     private static function loadDefaultClientCertSourceFile()
     {
         $rootEnv = self::isOnWindows() ? 'APPDATA' : 'HOME';
-        $path = sprintf('%s/%s', self::getEnv($rootEnv), self::MTLS_WELL_KNOWN_PATH);
+        $rootValue = self::getEnv($rootEnv);
+        if (empty($rootValue)) {
+            return null;
+        }
+        $path = sprintf('%s/%s', $rootValue, self::MTLS_WELL_KNOWN_PATH);
         if (!file_exists($path)) {
             return null;
         }
