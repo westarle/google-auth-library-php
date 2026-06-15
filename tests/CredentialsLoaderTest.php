@@ -194,6 +194,40 @@ class CredentialsLoaderTest extends TestCase
         $this->assertArrayHasKey('type', $json);
         $this->assertEquals('getenv', $json['type']);
     }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testFromWellKnownFileOnWindows(): void
+    {
+        // Ensure that on Windows systems, the Application Default Credentials logic falls back 
+        // to loading the well-known file from the APPDATA directory (e.g. APPDATA/gcloud/... ).
+        putenv('GOOGLE_AUTH_PHP_OS_FAMILY=Windows');
+        putenv('APPDATA=' . __DIR__ . '/fixtures/fixtures8');
+
+        $json = CredentialsLoader::fromWellKnownFile();
+
+        $this->assertIsArray($json);
+        $this->assertArrayHasKey('type', $json);
+        $this->assertEquals('windows_well_known', $json['type']);
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testFromWellKnownFileOnLinux(): void
+    {
+        // Ensure that on POSIX/Linux systems, the Application Default Credentials logic falls back 
+        // to loading the well-known file from the HOME directory (e.g. ~/.config/gcloud/... ).
+        putenv('GOOGLE_AUTH_PHP_OS_FAMILY=Linux');
+        putenv('HOME=' . __DIR__ . '/fixtures/fixtures8');
+
+        $json = CredentialsLoader::fromWellKnownFile();
+
+        $this->assertIsArray($json);
+        $this->assertArrayHasKey('type', $json);
+        $this->assertEquals('linux_well_known', $json['type']);
+    }
 }
 
 class TestCredentialsLoader extends CredentialsLoader
@@ -212,4 +246,5 @@ class TestCredentialsLoader extends CredentialsLoader
     {
         return null;
     }
+
 }

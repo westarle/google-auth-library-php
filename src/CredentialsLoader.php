@@ -63,7 +63,8 @@ abstract class CredentialsLoader implements
      */
     private static function isOnWindows()
     {
-        return strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+        $os = self::getEnv('GOOGLE_AUTH_PHP_OS_FAMILY') ?: PHP_OS_FAMILY;
+        return $os === 'Windows';
     }
 
     /**
