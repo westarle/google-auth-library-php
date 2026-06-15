@@ -83,6 +83,8 @@ class ApplicationDefaultCredentialsTest extends TestCase
 
     public function testGetCredentialsMemoizesResult()
     {
+        // Verify that consecutive calls to getCredentials() return the exact same instance,
+        // confirming that the resolved credentials object is correctly memoized in memory.
         setHomeEnv(__DIR__ . '/fixtures/fixtures1');
 
         $creds1 = ApplicationDefaultCredentials::getCredentials();
