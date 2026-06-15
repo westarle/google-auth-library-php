@@ -86,8 +86,12 @@ abstract class CredentialsLoader implements
             throw new \DomainException(self::unableToReadEnv($cause));
         }
         $jsonKey = file_get_contents($path);
+        $json = json_decode((string) $jsonKey, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new UnexpectedValueException(self::unableToReadEnv('json_decode error: ' . json_last_error_msg()));
+        }
 
-        return json_decode((string) $jsonKey, true);
+        return $json;
     }
 
     /**

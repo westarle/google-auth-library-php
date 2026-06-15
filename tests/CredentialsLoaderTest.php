@@ -194,6 +194,23 @@ class CredentialsLoaderTest extends TestCase
         $this->assertArrayHasKey('type', $json);
         $this->assertEquals('getenv', $json['type']);
     }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testLoadJsonFromEnvInvalidThrowsException(): void
+    {
+        // Other languages (such as Java, Go, Python, and Rust) strictly validate JSON syntax 
+        // when reading the file specified by GOOGLE_APPLICATION_CREDENTIALS.
+        // If the JSON is invalid, they throw an exception immediately rather than failing silently 
+        // and cascading to the next fallback mechanism.
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage('Unable to read the credential file specified by  GOOGLE_APPLICATION_CREDENTIALS: ');
+
+        putenv(CredentialsLoader::ENV_VAR . '=' . __DIR__ . '/fixtures/fixtures7/invalid.json');
+
+        CredentialsLoader::fromEnv();
+    }
 }
 
 class TestCredentialsLoader extends CredentialsLoader
