@@ -552,4 +552,16 @@ class ServiceAccountJwtAccessCredentialsTest extends TestCase
         $this->assertArrayHasKey('scope', $json);
         $this->assertEquals($json['scope'], implode(' ', $scope));
     }
+
+    public function testHandlesMalformedPrivateKey()
+    {
+        $this->expectException(\DomainException::class);
+        $this->expectExceptionMessage('OpenSSL unable to validate key');
+        
+        $testJson = $this->createTestJson();
+        $testJson['private_key'] = 'malformed-private-key-data';
+        
+        $sa = new Google\Auth\Credentials\ServiceAccountJwtAccessCredentials($testJson);
+        $sa->updateMetadata(['foo' => 'bar'], 'https://example.com/service');
+    }
 }
