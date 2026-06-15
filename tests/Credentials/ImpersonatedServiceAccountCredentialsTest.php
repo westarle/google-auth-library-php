@@ -557,4 +557,19 @@ class ImpersonatedServiceAccountCredentialsTest extends TestCase
             [[], '', $defaultScope, 'expectedScope' => $defaultScope],
         ];
     }
+
+    public function testPropagatesUseJwtAccessWithScopeToSourceCredentials()
+    {
+        $sourceCredentials = $this->prophesize('Google\Auth\Credentials\ServiceAccountCredentials');
+        $sourceCredentials->useJwtAccessWithScope(true)->shouldBeCalled();
+        
+        $jsonKey = [
+            'type' => 'impersonated_service_account',
+            'service_account_impersonation_url' => self::IMPERSONATION_URL,
+            'source_credentials' => $sourceCredentials->reveal(),
+        ];
+        
+        $creds = new Google\Auth\Credentials\ImpersonatedServiceAccountCredentials(self::SCOPE, $jsonKey);
+        $creds->useJwtAccessWithScope(true);
+    }
 }

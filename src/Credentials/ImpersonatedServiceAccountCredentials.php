@@ -303,4 +303,16 @@ class ImpersonatedServiceAccountCredentials extends CredentialsLoader implements
             ? $this->sourceCredentials->getUniverseDomain()
             : self::DEFAULT_UNIVERSE_DOMAIN;
     }
+
+    /**
+     * @param bool $useJwtAccessWithScope
+     * @return $this
+     */
+    public function useJwtAccessWithScope($useJwtAccessWithScope = true)
+    {
+        if (method_exists($this->sourceCredentials, 'useJwtAccessWithScope')) {
+            $this->sourceCredentials->useJwtAccessWithScope($useJwtAccessWithScope);
+        }
+        return $this;
+    }
 }
