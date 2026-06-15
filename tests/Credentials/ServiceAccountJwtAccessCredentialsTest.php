@@ -552,4 +552,21 @@ class ServiceAccountJwtAccessCredentialsTest extends TestCase
         $this->assertArrayHasKey('scope', $json);
         $this->assertEquals($json['scope'], implode(' ', $scope));
     }
+
+    public function testJwtClaimsSet()
+    {
+        $testJson = $this->createTestJson();
+        $sa = new Google\Auth\Credentials\ServiceAccountJwtAccessCredentials($testJson);
+        $metadata = $sa->updateMetadata(['foo' => 'bar'], 'https://example.com/service');
+        $token = str_replace('Bearer ', '', $metadata[Google\Auth\CredentialsLoader::AUTH_METADATA_KEY][0]);
+        
+        list($headerEncoded, $payloadEncoded, $sig) = explode('.', $token);
+        $payload = json_decode(base64_decode($payloadEncoded), true);
+        
+        $this->assertEquals($testJson['client_email'], $payload['iss']);
+        $this->assertEquals($testJson['client_email'], $payload['sub']);
+        $this->assertArrayHasKey('iat', $payload);
+        $this->assertArrayHasKey('exp', $payload);
+        $this->assertEquals($payload['iat'] + 3660, $payload['exp']);
+    }
 }
