@@ -369,6 +369,32 @@ class AuthTokenMiddlewareTest extends BaseTest
             [new MiddlewareCallback()],
         ];
     }
+
+    public function testQuotaProjectHeaderIsAdded()
+    {
+        $fetcher = $this->prophesize('Google\Auth\FetchAuthTokenInterface');
+        $fetcher->willImplement('Google\Auth\GetQuotaProjectInterface');
+        $fetcher->getQuotaProject()->willReturn('test-quota-project');
+        $fetcher->fetchAuthToken(Prophecy\Argument::any())->willReturn(['access_token' => 'token']);
+        $fetcher->getCacheKey()->willReturn('test-cache-key');
+        $fetcher->getLastReceivedToken()->willReturn(null);
+
+        $middleware = new Google\Auth\Middleware\AuthTokenMiddleware($fetcher->reveal());
+        $request = new GuzzleHttp\Psr7\Request('GET', 'http://example.com');
+        
+        $called = false;
+        $nextHandler = function ($req, $options) use (&$called) {
+            $called = true;
+            $this->assertTrue($req->hasHeader('x-goog-user-project'));
+            $this->assertEquals('test-quota-project', $req->getHeaderLine('x-goog-user-project'));
+            return new \GuzzleHttp\Promise\FulfilledPromise('response');
+        };
+        
+        $handler = $middleware($nextHandler);
+        $handler($request, ['auth' => 'google_auth'])->wait();
+        
+        $this->assertTrue($called);
+    }
 }
 
 class MiddlewareCallback
