@@ -55,9 +55,11 @@ class ServiceAccountJwtAccessCredentialsTest extends TestCase
     public function testInitalizeFromAFile()
     {
         $keyFile = __DIR__ . '/../fixtures/fixtures1/private.json';
-        $this->assertNotNull(
-            new ServiceAccountJwtAccessCredentials($keyFile)
-        );
+        $sa = new ServiceAccountJwtAccessCredentials($keyFile);
+        $this->assertNotNull($sa);
+        $this->assertEquals('hello@youarecool.com', $sa->getClientName());
+        $this->assertEquals(file_get_contents(__DIR__ . '/../fixtures/fixtures1/private.pem'), $sa->getPrivateKey());
+        $this->assertEquals('test_quota_project', $sa->getQuotaProject());
     }
 
     public function testFailsToInitializeFromInvalidJsonData()
@@ -117,6 +119,9 @@ class ServiceAccountJwtAccessCredentialsTest extends TestCase
             $testJson
         );
         $this->assertNotNull($sa);
+        $this->assertEquals($testJson['client_email'], $sa->getClientName());
+        $this->assertEquals($testJson['private_key'], $sa->getPrivateKey());
+        $this->assertEquals($testJson['project_id'], $sa->getProjectId());
     }
 
     public function testNoOpOnFetchAuthToken()

@@ -63,9 +63,12 @@ class ApplicationDefaultCredentialsTest extends TestCase
     {
         $keyFile = __DIR__ . '/fixtures/fixtures1/private.json';
         putenv(ServiceAccountCredentials::ENV_VAR . '=' . $keyFile);
-        $this->assertNotNull(
-            ApplicationDefaultCredentials::getCredentials('a scope')
-        );
+        $creds = ApplicationDefaultCredentials::getCredentials('a scope');
+        $this->assertInstanceOf(ServiceAccountCredentials::class, $creds);
+        $this->assertEquals('hello@youarecool.com', $creds->getClientName());
+        $this->assertEquals(file_get_contents(__DIR__ . '/fixtures/fixtures1/private.pem'), $creds->getPrivateKey());
+        $this->assertEquals('test_quota_project', $creds->getQuotaProject());
+        $this->assertEquals('example-universe.com', $creds->getUniverseDomain());
     }
 
     public function testLoadsDefaultFileIfPresentAndEnvVarIsNotSet()

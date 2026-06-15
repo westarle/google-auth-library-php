@@ -145,9 +145,12 @@ class ServiceAccountCredentialsTest extends TestCase
     public function testInitalizeFromAFile()
     {
         $keyFile = __DIR__ . '/../fixtures/fixtures1/private.json';
-        $this->assertNotNull(
-            new ServiceAccountCredentials('scope/1', $keyFile)
-        );
+        $sa = new ServiceAccountCredentials('scope/1', $keyFile);
+        $this->assertNotNull($sa);
+        $this->assertEquals('hello@youarecool.com', $sa->getClientName());
+        $this->assertEquals(file_get_contents(__DIR__ . '/../fixtures/fixtures1/private.pem'), $sa->getPrivateKey());
+        $this->assertEquals('test_quota_project', $sa->getQuotaProject());
+        $this->assertEquals('example-universe.com', $sa->getUniverseDomain());
     }
 
     public function testFailsToInitializeFromInvalidJsonData()
