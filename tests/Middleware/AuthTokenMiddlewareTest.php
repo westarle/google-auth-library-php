@@ -19,6 +19,7 @@ namespace Google\Auth\Tests\Middleware;
 
 use Google\Auth\FetchAuthTokenCache;
 use Google\Auth\Middleware\AuthTokenMiddleware;
+use Google\Auth\GetQuotaProjectInterface;
 use Google\Auth\Tests\BaseTest;
 use Google\Auth\UpdateMetadataInterface;
 use GuzzleHttp\Handler\MockHandler;
@@ -29,6 +30,34 @@ use Prophecy\PhpUnit\ProphecyTrait;
 
 class AuthTokenMiddlewareTest extends BaseTest
 {
+    public function testInjectsQuotaProjectHeader()
+    {
+        $quotaProject = 'my-quota-project';
+        $token = '1/abcdef1234567890';
+        $authResult = ['access_token' => $token];
+
+        $this->mockFetcher->willImplement(GetQuotaProjectInterface::class);
+        $this->mockFetcher->getQuotaProject()
+            ->shouldBeCalledTimes(1)
+            ->willReturn($quotaProject);
+        $this->mockFetcher->fetchAuthToken(Argument::any())
+            ->shouldBeCalledTimes(1)
+            ->willReturn($authResult);
+
+        $request = new Request('GET', 'http://foo.com');
+
+        $middleware = new AuthTokenMiddleware($this->mockFetcher->reveal());
+        $mockHandlerCalled = false;
+        $mock = new MockHandler([function ($request, $options) use ($quotaProject, &$mockHandlerCalled) {
+            $this->assertEquals($quotaProject, $request->getHeaderLine('X-Goog-User-Project'));
+            $mockHandlerCalled = true;
+            return new Response(200);
+        }]);
+        $callable = $middleware($mock);
+        $callable($request, ['auth' => 'google_auth']);
+        $this->assertTrue($mockHandlerCalled);
+    }
+
     use ProphecyTrait;
 
     private $mockFetcher;
