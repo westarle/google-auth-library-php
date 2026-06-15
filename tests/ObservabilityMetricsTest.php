@@ -247,4 +247,16 @@ class ObservabilityMetricsTest extends TestCase
             [null, 'someTargetAudience', 'auth-request-type/it'],
         ];
     }
+
+    public function testServiceAccountCredentialsSelfSignedJwtCredType()
+    {
+        $keyFile = [
+            'private_key' => file_get_contents(__DIR__ . '/fixtures/fixtures1/private.pem'),
+            'client_email' => 'test@example.com',
+        ];
+        $credentials = new Google\Auth\Credentials\ServiceAccountCredentials(null, $keyFile);
+        $metadata = $credentials->updateMetadata([], 'https://example.com/service');
+        $this->assertArrayHasKey('x-goog-api-client', $metadata);
+        $this->assertStringContainsString('cred-type/jwt', $metadata['x-goog-api-client'][0]);
+    }
 }

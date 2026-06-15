@@ -417,6 +417,9 @@ class ServiceAccountCredentials extends CredentialsLoader implements
 
     protected function getCredType(): string
     {
+        if ($this->useSelfSignedJwt()) {
+            return 'jwt';
+        }
         return self::CRED_TYPE;
     }
 
