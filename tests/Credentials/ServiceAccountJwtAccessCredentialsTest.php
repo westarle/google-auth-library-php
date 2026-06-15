@@ -98,6 +98,17 @@ class ServiceAccountJwtAccessCredentialsTest extends TestCase
         );
     }
 
+    public function testFailsOnMalformedPrivateKey()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $testJson = $this->createTestJson();
+        $testJson['private_key'] = 'invalid-private-key';
+        new ServiceAccountJwtAccessCredentials(
+            $testJson
+        );
+    }
+
     public function testFailsWithBothAudienceAndScope()
     {
         $this->expectException(UnexpectedValueException::class);

@@ -134,6 +134,19 @@ class ServiceAccountCredentialsTest extends TestCase
         );
     }
 
+    public function testFailsToInitializeFromMalformedPrivateKey()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $testJson = $this->createTestJson();
+        $testJson['private_key'] = 'invalid-private-key';
+        $scope = ['scope/1', 'scope/2'];
+        new ServiceAccountCredentials(
+            $scope,
+            $testJson
+        );
+    }
+
     public function testFailsToInitalizeFromANonExistentFile()
     {
         $this->expectException(InvalidArgumentException::class);

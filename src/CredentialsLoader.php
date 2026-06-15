@@ -321,4 +321,29 @@ abstract class CredentialsLoader implements
     {
         return getenv($env) ?: $_ENV[$env] ?? null;
     }
+
+    /**
+     * Check if a private key is a valid PEM format.
+     *
+     * @param string $privateKey
+     * @return bool
+     */
+    protected static function wellFormedPrivateKey($privateKey): bool
+    {
+        // Must contain "-----BEGIN" and "-----END" boundaries
+        if (strpos($privateKey, '-----BEGIN') === false || strpos($privateKey, '-----END') === false) {
+            return false;
+        }
+
+        // If OpenSSL is available, we can perform a deeper verification
+        if (extension_loaded('openssl')) {
+            $res = openssl_pkey_get_private($privateKey);
+            if ($res !== false) {
+                return true;
+            }
+            return false;
+        }
+
+        return true;
+    }
 }

@@ -158,6 +158,11 @@ class ServiceAccountCredentials extends CredentialsLoader implements
                 'json key is missing the private_key field'
             );
         }
+        if (!self::wellFormedPrivateKey($jsonKey['private_key'])) {
+            throw new \InvalidArgumentException(
+                'private key is not a valid PEM format'
+            );
+        }
         if (array_key_exists('quota_project_id', $jsonKey)) {
             $this->quotaProject = (string) $jsonKey['quota_project_id'];
         }
