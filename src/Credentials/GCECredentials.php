@@ -258,7 +258,7 @@ class GCECredentials extends CredentialsLoader implements
      */
     public static function getTokenUri($serviceAccountIdentity = null)
     {
-        $base = 'http://' . self::METADATA_IP . '/computeMetadata/';
+        $base = 'http://' . self::getMetadataHost() . '/computeMetadata/';
         $base .= self::TOKEN_URI_PATH;
 
         if ($serviceAccountIdentity) {
@@ -280,7 +280,7 @@ class GCECredentials extends CredentialsLoader implements
      */
     public static function getClientNameUri($serviceAccountIdentity = null)
     {
-        $base = 'http://' . self::METADATA_IP . '/computeMetadata/';
+        $base = 'http://' . self::getMetadataHost() . '/computeMetadata/';
         $base .= self::CLIENT_ID_URI_PATH;
 
         if ($serviceAccountIdentity) {
@@ -303,7 +303,7 @@ class GCECredentials extends CredentialsLoader implements
      */
     private static function getIdTokenUri($serviceAccountIdentity = null)
     {
-        $base = 'http://' . self::METADATA_IP . '/computeMetadata/';
+        $base = 'http://' . self::getMetadataHost() . '/computeMetadata/';
         $base .= self::ID_TOKEN_URI_PATH;
 
         if ($serviceAccountIdentity) {
@@ -324,7 +324,7 @@ class GCECredentials extends CredentialsLoader implements
      */
     private static function getProjectIdUri()
     {
-        $base = 'http://' . self::METADATA_IP . '/computeMetadata/';
+        $base = 'http://' . self::getMetadataHost() . '/computeMetadata/';
 
         return $base . self::PROJECT_ID_URI_PATH;
     }
@@ -334,9 +334,19 @@ class GCECredentials extends CredentialsLoader implements
      *
      * @return string
      */
+    /**
+     * Get the metadata host, prioritizing the GCE_METADATA_HOST environment variable.
+     *
+     * @return string
+     */
+    private static function getMetadataHost()
+    {
+        return getenv('GCE_METADATA_HOST') ?: self::METADATA_IP;
+    }
+
     private static function getUniverseDomainUri()
     {
-        $base = 'http://' . self::METADATA_IP . '/computeMetadata/';
+        $base = 'http://' . self::getMetadataHost() . '/computeMetadata/';
 
         return $base . self::UNIVERSE_DOMAIN_URI_PATH;
     }
@@ -365,7 +375,7 @@ class GCECredentials extends CredentialsLoader implements
         $httpHandler = $httpHandler
             ?: HttpHandlerFactory::build(HttpClientCache::getHttpClient());
 
-        $checkUri = 'http://' . self::METADATA_IP;
+        $checkUri = 'http://' . self::getMetadataHost();
         for ($i = 1; $i <= self::MAX_COMPUTE_PING_TRIES; $i++) {
             try {
                 // Comment from: oauth2client/client.py

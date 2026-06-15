@@ -78,6 +78,9 @@ class ApplicationDefaultCredentialsTest extends TestCase
 
     public function testFailsIfNotOnGceAndNoDefaultFileFound()
     {
+        if (file_exists('/sys/class/dmi/id/product_name') && strpos(file_get_contents('/sys/class/dmi/id/product_name'), 'Google') === 0) {
+            $this->markTestSkipped('This test runs only on non GCE machines');
+        }
         $this->expectException(DomainException::class);
 
         setHomeEnv(__DIR__ . '/not_exist_fixtures');
@@ -293,6 +296,9 @@ class ApplicationDefaultCredentialsTest extends TestCase
 
     public function testGetMiddlewareFailsIfNotOnGceAndNoDefaultFileFound()
     {
+        if (file_exists('/sys/class/dmi/id/product_name') && strpos(file_get_contents('/sys/class/dmi/id/product_name'), 'Google') === 0) {
+            $this->markTestSkipped('This test runs only on non GCE machines');
+        }
         $this->expectException(DomainException::class);
 
         setHomeEnv(__DIR__ . '/not_exist_fixtures');
@@ -475,6 +481,9 @@ class ApplicationDefaultCredentialsTest extends TestCase
 
     public function testGetIdTokenCredentialsFailsIfNotOnGceAndNoDefaultFileFound()
     {
+        if (file_exists('/sys/class/dmi/id/product_name') && strpos(file_get_contents('/sys/class/dmi/id/product_name'), 'Google') === 0) {
+            $this->markTestSkipped('This test runs only on non GCE machines');
+        }
         $this->expectException(DomainException::class);
         $this->expectExceptionMessage('Your default credentials were not found');
 

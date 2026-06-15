@@ -54,6 +54,27 @@ class GCECredentialsTest extends BaseTest
         $this->assertTrue($onGce);
     }
 
+    public function testOnGceWithMetadataHostOverride()
+    {
+        // Verify that the GCE metadata host can be overridden via the GCE_METADATA_HOST environment variable,
+        // allowing correct URL resolution for mock servers or proxy endpoints.
+        putenv('GCE_METADATA_HOST=foo.bar.com');
+        $hasHeader = false;
+        $requestedHost = '';
+        $dummyHandler = function ($request) use (&$hasHeader, &$requestedHost) {
+            $hasHeader = $request->getHeaderLine(GCECredentials::FLAVOR_HEADER) === 'Google';
+            $requestedHost = $request->getUri()->getHost();
+
+            return new Psr7\Response(200, [GCECredentials::FLAVOR_HEADER => 'Google']);
+        };
+
+        $onGce = GCECredentials::onGce($dummyHandler);
+        $this->assertTrue($hasHeader);
+        $this->assertTrue($onGce);
+        $this->assertEquals('foo.bar.com', $requestedHost);
+        putenv('GCE_METADATA_HOST');
+    }
+
     public function testOnGceMetricsHeader()
     {
         $handerInvoked = false;
@@ -74,6 +95,9 @@ class GCECredentialsTest extends BaseTest
 
     public function testOnGCEIsFalseOnClientErrorStatus()
     {
+        if (file_exists('/sys/class/dmi/id/product_name') && strpos(file_get_contents('/sys/class/dmi/id/product_name'), 'Google') === 0) {
+            $this->markTestSkipped('This test runs only on non GCE machines');
+        }
         // simulate retry attempts by returning multiple 400s
         $httpHandler = getHandler([
             new Response(400),
@@ -85,6 +109,9 @@ class GCECredentialsTest extends BaseTest
 
     public function testOnGCEIsFalseOnServerErrorStatus()
     {
+        if (file_exists('/sys/class/dmi/id/product_name') && strpos(file_get_contents('/sys/class/dmi/id/product_name'), 'Google') === 0) {
+            $this->markTestSkipped('This test runs only on non GCE machines');
+        }
         // simulate retry attempts by returning multiple 500s
         $httpHandler = getHandler([
             new Response(500),
@@ -219,6 +246,9 @@ class GCECredentialsTest extends BaseTest
 
     public function testFetchAuthTokenShouldBeEmptyIfNotOnGCE()
     {
+        if (file_exists('/sys/class/dmi/id/product_name') && strpos(file_get_contents('/sys/class/dmi/id/product_name'), 'Google') === 0) {
+            $this->markTestSkipped('This test runs only on non GCE machines');
+        }
         // simulate retry attempts by returning multiple 500s
         $httpHandler = getHandler([
             new Response(500),
@@ -375,6 +405,9 @@ class GCECredentialsTest extends BaseTest
 
     public function testGetClientNameShouldBeEmptyIfNotOnGCE()
     {
+        if (file_exists('/sys/class/dmi/id/product_name') && strpos(file_get_contents('/sys/class/dmi/id/product_name'), 'Google') === 0) {
+            $this->markTestSkipped('This test runs only on non GCE machines');
+        }
         // simulate retry attempts by returning multiple 500s
         $httpHandler = getHandler([
             new Response(500),
@@ -541,6 +574,18 @@ class GCECredentialsTest extends BaseTest
             'http://169.254.169.254/computeMetadata/v1/instance/service-accounts/foo/token',
             $tokenUri
         );
+    }
+
+    public function testGetTokenUriWithMetadataHostOverride()
+    {
+        // Verify that token URIs are constructed using the overridden GCE metadata host.
+        putenv('GCE_METADATA_HOST=foo.bar.com');
+        $tokenUri = GCECredentials::getTokenUri('foo');
+        $this->assertEquals(
+            'http://foo.bar.com/computeMetadata/v1/instance/service-accounts/foo/token',
+            $tokenUri
+        );
+        putenv('GCE_METADATA_HOST');
     }
 
     public function testSetIsOnGceToFalseReturnsEmptyCreds()
