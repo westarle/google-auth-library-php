@@ -552,4 +552,20 @@ class ServiceAccountJwtAccessCredentialsTest extends TestCase
         $this->assertArrayHasKey('scope', $json);
         $this->assertEquals($json['scope'], implode(' ', $scope));
     }
+
+    public function testCustomAudienceOverrideViaAdditionalClaims()
+    {
+        $testJson = $this->createTestJson();
+        $additionalClaims = ['aud' => 'https://custom-audience.com/service'];
+        $sa = new Google\Auth\Credentials\ServiceAccountJwtAccessCredentials($testJson, null, $additionalClaims);
+        
+        $authUri = 'https://example.com/service';
+        $metadata = $sa->updateMetadata(['foo' => 'bar'], $authUri);
+        $token = str_replace('Bearer ', '', $metadata[Google\Auth\CredentialsLoader::AUTH_METADATA_KEY][0]);
+        
+        list($headerEncoded, $payloadEncoded, $sig) = explode('.', $token);
+        $payload = json_decode(base64_decode($payloadEncoded), true);
+        
+        $this->assertEquals('https://custom-audience.com/service', $payload['aud']);
+    }
 }

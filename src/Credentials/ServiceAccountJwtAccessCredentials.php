@@ -74,7 +74,7 @@ class ServiceAccountJwtAccessCredentials extends CredentialsLoader implements
      * @param string|string[] $scope the scope of the access request, expressed
      *   either as an Array or as a space-delimited String.
      */
-    public function __construct($jsonKey, $scope = null)
+    public function __construct($jsonKey, $scope = null, array $additionalClaims = [])
     {
         if (is_string($jsonKey)) {
             if (!file_exists($jsonKey)) {
@@ -104,6 +104,7 @@ class ServiceAccountJwtAccessCredentials extends CredentialsLoader implements
             'signingAlgorithm' => 'RS256',
             'signingKey' => $jsonKey['private_key'],
             'scope' => $scope,
+            'additionalClaims' => $additionalClaims,
         ]);
 
         $this->projectId = $jsonKey['project_id'] ?? null;
@@ -123,6 +124,10 @@ class ServiceAccountJwtAccessCredentials extends CredentialsLoader implements
         ?callable $httpHandler = null
     ) {
         $scope = $this->auth->getScope();
+        $additionalClaims = $this->auth->getAdditionalClaims();
+        if (isset($additionalClaims['aud'])) {
+            $authUri = $additionalClaims['aud'];
+        }
         if (empty($authUri) && empty($scope)) {
             return $metadata;
         }
@@ -143,6 +148,10 @@ class ServiceAccountJwtAccessCredentials extends CredentialsLoader implements
     {
         $audience = $this->auth->getAudience();
         $scope = $this->auth->getScope();
+        $additionalClaims = $this->auth->getAdditionalClaims();
+        if (isset($additionalClaims['aud'])) {
+            $authUri = $additionalClaims['aud'];
+        }
         if (empty($audience) && empty($scope)) {
             return null;
         }
