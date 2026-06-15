@@ -74,24 +74,30 @@ class GCECredentialsTest extends BaseTest
 
     public function testOnGCEIsFalseOnClientErrorStatus()
     {
+        putenv('GKE_PRODUCT_NAME_FILE=/nonexistant/file');
         // simulate retry attempts by returning multiple 400s
         $httpHandler = getHandler([
             new Response(400),
             new Response(400),
             new Response(400)
         ]);
-        $this->assertFalse(GCECredentials::onGCE($httpHandler));
+        $result = GCECredentials::onGCE($httpHandler);
+        putenv('GKE_PRODUCT_NAME_FILE');
+        $this->assertFalse($result);
     }
 
     public function testOnGCEIsFalseOnServerErrorStatus()
     {
+        putenv('GKE_PRODUCT_NAME_FILE=/nonexistant/file');
         // simulate retry attempts by returning multiple 500s
         $httpHandler = getHandler([
             new Response(500),
             new Response(500),
             new Response(500)
         ]);
-        $this->assertFalse(GCECredentials::onGCE($httpHandler));
+        $result = GCECredentials::onGCE($httpHandler);
+        putenv('GKE_PRODUCT_NAME_FILE');
+        $this->assertFalse($result);
     }
 
     public function testCheckProductNameFile()
@@ -219,6 +225,7 @@ class GCECredentialsTest extends BaseTest
 
     public function testFetchAuthTokenShouldBeEmptyIfNotOnGCE()
     {
+        putenv('GKE_PRODUCT_NAME_FILE=/nonexistant/file');
         // simulate retry attempts by returning multiple 500s
         $httpHandler = getHandler([
             new Response(500),
@@ -226,7 +233,9 @@ class GCECredentialsTest extends BaseTest
             new Response(500)
         ]);
         $g = new GCECredentials();
-        $this->assertEquals([], $g->fetchAuthToken($httpHandler));
+        $res = $g->fetchAuthToken($httpHandler);
+        putenv('GKE_PRODUCT_NAME_FILE');
+        $this->assertEquals([], $res);
     }
 
     public function testFetchAuthTokenShouldFailIfResponseIsNotJson()
@@ -375,6 +384,7 @@ class GCECredentialsTest extends BaseTest
 
     public function testGetClientNameShouldBeEmptyIfNotOnGCE()
     {
+        putenv('GKE_PRODUCT_NAME_FILE=/nonexistant/file');
         // simulate retry attempts by returning multiple 500s
         $httpHandler = getHandler([
             new Response(500),
@@ -383,7 +393,9 @@ class GCECredentialsTest extends BaseTest
         ]);
 
         $creds = new GCECredentials();
-        $this->assertEquals('', $creds->getClientName($httpHandler));
+        $res = $creds->getClientName($httpHandler);
+        putenv('GKE_PRODUCT_NAME_FILE');
+        $this->assertEquals('', $res);
     }
 
     public function testSignBlob()

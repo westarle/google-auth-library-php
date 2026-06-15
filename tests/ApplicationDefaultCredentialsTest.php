@@ -88,7 +88,14 @@ class ApplicationDefaultCredentialsTest extends TestCase
             new Response(500)
         ]);
 
-        ApplicationDefaultCredentials::getCredentials('a scope', $httpHandler);
+        $mockCacheItem = $this->prophesize('Psr\Cache\CacheItemInterface');
+        $mockCacheItem->isHit()->willReturn(true);
+        $mockCacheItem->get()->willReturn(false);
+
+        $mockCache = $this->prophesize(CacheItemPoolInterface::class);
+        $mockCache->getItem(GCECache::GCE_CACHE_KEY)->willReturn($mockCacheItem->reveal());
+
+        ApplicationDefaultCredentials::getCredentials('a scope', $httpHandler, null, $mockCache->reveal());
     }
 
     public function testSuccedsIfNoDefaultFilesButIsOnGCE()
@@ -304,7 +311,14 @@ class ApplicationDefaultCredentialsTest extends TestCase
             new Response(500)
         ]);
 
-        ApplicationDefaultCredentials::getMiddleware('a scope', $httpHandler);
+        $mockCacheItem = $this->prophesize('Psr\Cache\CacheItemInterface');
+        $mockCacheItem->isHit()->willReturn(true);
+        $mockCacheItem->get()->willReturn(false);
+
+        $mockCache = $this->prophesize(CacheItemPoolInterface::class);
+        $mockCache->getItem(GCECache::GCE_CACHE_KEY)->willReturn($mockCacheItem->reveal());
+
+        ApplicationDefaultCredentials::getMiddleware('a scope', $httpHandler, null, $mockCache->reveal());
     }
 
     public function testGetMiddlewareWithCacheOptions()
@@ -487,9 +501,18 @@ class ApplicationDefaultCredentialsTest extends TestCase
             new Response(500)
         ]);
 
+        $mockCacheItem = $this->prophesize('Psr\Cache\CacheItemInterface');
+        $mockCacheItem->isHit()->willReturn(true);
+        $mockCacheItem->get()->willReturn(false);
+
+        $mockCache = $this->prophesize(CacheItemPoolInterface::class);
+        $mockCache->getItem(GCECache::GCE_CACHE_KEY)->willReturn($mockCacheItem->reveal());
+
         ApplicationDefaultCredentials::getIdTokenCredentials(
             $this->targetAudience,
-            $httpHandler
+            $httpHandler,
+            null,
+            $mockCache->reveal()
         );
     }
 

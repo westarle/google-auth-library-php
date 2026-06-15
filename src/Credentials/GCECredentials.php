@@ -403,7 +403,8 @@ class GCECredentials extends CredentialsLoader implements
         }
 
         // Detect GCE residency on Linux
-        return self::detectResidencyLinux(self::GKE_PRODUCT_NAME_FILE);
+        $productNameFile = getenv('GKE_PRODUCT_NAME_FILE') ?: self::GKE_PRODUCT_NAME_FILE;
+        return self::detectResidencyLinux($productNameFile);
     }
 
     private static function detectResidencyLinux(string $productNameFile): bool
