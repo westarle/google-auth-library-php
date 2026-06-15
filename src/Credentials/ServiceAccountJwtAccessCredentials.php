@@ -104,6 +104,7 @@ class ServiceAccountJwtAccessCredentials extends CredentialsLoader implements
             'signingAlgorithm' => 'RS256',
             'signingKey' => $jsonKey['private_key'],
             'scope' => $scope,
+            'signingKeyId' => $jsonKey['private_key_id'] ?? null,
         ]);
 
         $this->projectId = $jsonKey['project_id'] ?? null;
