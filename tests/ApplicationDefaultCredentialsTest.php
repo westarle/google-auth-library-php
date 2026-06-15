@@ -50,6 +50,11 @@ class ApplicationDefaultCredentialsTest extends TestCase
     private $originalServiceAccount;
     private const SDK_DEBUG_ENV_VAR = 'GOOGLE_SDK_PHP_LOGGING';
 
+    public function tearDown(): void
+    {
+        ApplicationDefaultCredentials::clearCache();
+    }
+
     public function testGetCredentialsFailsIfEnvSpecifiesNonExistentFile()
     {
         $this->expectException(DomainException::class);
@@ -76,8 +81,22 @@ class ApplicationDefaultCredentialsTest extends TestCase
         );
     }
 
+    public function testGetCredentialsMemoizesResult()
+    {
+        setHomeEnv(__DIR__ . '/fixtures/fixtures1');
+
+        $creds1 = ApplicationDefaultCredentials::getCredentials();
+        $creds2 = ApplicationDefaultCredentials::getCredentials();
+
+        $this->assertSame($creds1, $creds2);
+    }
+
     public function testFailsIfNotOnGceAndNoDefaultFileFound()
     {
+        if (GCECredentials::onGce()) {
+            $this->markTestSkipped('This test runs only on non GCE machines');
+        }
+
         $this->expectException(DomainException::class);
 
         setHomeEnv(__DIR__ . '/not_exist_fixtures');
@@ -293,6 +312,10 @@ class ApplicationDefaultCredentialsTest extends TestCase
 
     public function testGetMiddlewareFailsIfNotOnGceAndNoDefaultFileFound()
     {
+        if (GCECredentials::onGce()) {
+            $this->markTestSkipped('This test runs only on non GCE machines');
+        }
+
         $this->expectException(DomainException::class);
 
         setHomeEnv(__DIR__ . '/not_exist_fixtures');
@@ -475,6 +498,10 @@ class ApplicationDefaultCredentialsTest extends TestCase
 
     public function testGetIdTokenCredentialsFailsIfNotOnGceAndNoDefaultFileFound()
     {
+        if (GCECredentials::onGce()) {
+            $this->markTestSkipped('This test runs only on non GCE machines');
+        }
+
         $this->expectException(DomainException::class);
         $this->expectExceptionMessage('Your default credentials were not found');
 
@@ -833,12 +860,14 @@ class ApplicationDefaultCredentialsTest extends TestCase
         $this->assertEquals(CredentialsLoader::DEFAULT_UNIVERSE_DOMAIN, $creds->getUniverseDomain());
 
         // Test universe domain in "service_account" keyfile
+        ApplicationDefaultCredentials::clearCache();
         $keyFile = __DIR__ . '/fixtures/fixtures1/private.json';
         putenv(ServiceAccountCredentials::ENV_VAR . '=' . $keyFile);
         $creds = ApplicationDefaultCredentials::getCredentials();
         $this->assertEquals('example-universe.com', $creds->getUniverseDomain());
 
         // Test universe domain in "authenticated_user" keyfile is not read.
+        ApplicationDefaultCredentials::clearCache();
         $keyFile = __DIR__ . '/fixtures/fixtures2/private.json';
         putenv(ServiceAccountCredentials::ENV_VAR . '=' . $keyFile);
         $creds2 = ApplicationDefaultCredentials::getCredentials();

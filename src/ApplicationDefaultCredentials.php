@@ -76,6 +76,19 @@ class ApplicationDefaultCredentials
     private const SDK_DEBUG_ENV_VAR = 'GOOGLE_SDK_PHP_LOGGING';
 
     /**
+     * @var array<array{args: array<mixed>, creds: FetchAuthTokenInterface}>
+     */
+    private static $loadedCredentials = [];
+
+    /**
+     * Clear the loaded credentials cache.
+     */
+    public static function clearCache(): void
+    {
+        self::$loadedCredentials = [];
+    }
+
+    /**
      *
      * Obtains an AuthTokenSubscriber that uses the default FetchAuthTokenInterface
      * implementation to use in this environment.
@@ -167,6 +180,13 @@ class ApplicationDefaultCredentials
         ?string $universeDomain = null,
         null|false|LoggerInterface $logger = null,
     ) {
+        $args = [$scope, $httpHandler, $cacheConfig, $cache, $quotaProject, $defaultScope, $universeDomain, $logger];
+        foreach (self::$loadedCredentials as $entry) {
+            if ($entry['args'] === $args) {
+                return $entry['creds'];
+            }
+        }
+
         $creds = null;
         $jsonKey = CredentialsLoader::fromEnv()
             ?: CredentialsLoader::fromWellKnownFile();
@@ -211,6 +231,9 @@ class ApplicationDefaultCredentials
         if (!is_null($cache)) {
             $creds = new FetchAuthTokenCache($creds, $cacheConfig, $cache);
         }
+
+        self::$loadedCredentials[] = ['args' => $args, 'creds' => $creds];
+
         return $creds;
     }
 
