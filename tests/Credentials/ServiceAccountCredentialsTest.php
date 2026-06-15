@@ -242,17 +242,43 @@ class ServiceAccountCredentialsTest extends TestCase
     public function testCanFetchCredsOK()
     {
         $testJson = $this->createTestJson();
-        $testJsonText = json_encode($testJson);
         $scope = ['scope/1', 'scope/2'];
-        $httpHandler = getHandler([
-            new Response(200, [], Utils::streamFor($testJsonText)),
-        ]);
+        $expectedToken = [
+            'access_token' => 'mock-access-token',
+            'expires_in' => 3600,
+            'token_type' => 'Bearer',
+        ];
+
+        $timesCalled = 0;
+        $httpHandler = function (Request $request) use (&$timesCalled, $expectedToken) {
+            $timesCalled++;
+            $this->assertEquals('POST', $request->getMethod());
+            $this->assertEquals(
+                'application/x-www-form-urlencoded',
+                $request->getHeaderLine('Content-Type')
+            );
+            parse_str((string) $request->getBody(), $post);
+            $this->assertArrayHasKey('grant_type', $post);
+            $this->assertEquals('urn:ietf:params:oauth:grant-type:jwt-bearer', $post['grant_type']);
+            $this->assertArrayHasKey('assertion', $post);
+
+            list($header, $payload, $sig) = explode('.', $post['assertion']);
+            $jwtParams = json_decode(base64_decode($payload), true);
+            $this->assertArrayHasKey('iss', $jwtParams);
+            $this->assertEquals('test@example.com', $jwtParams['iss']);
+            $this->assertArrayHasKey('scope', $jwtParams);
+            $this->assertEquals('scope/1 scope/2', $jwtParams['scope']);
+
+            return new Response(200, [], Utils::streamFor(json_encode($expectedToken)));
+        };
+
         $sa = new ServiceAccountCredentials(
             $scope,
             $testJson
         );
         $tokens = $sa->fetchAuthToken($httpHandler);
-        $this->assertEquals($testJson, $tokens);
+        $this->assertEquals($expectedToken, $tokens);
+        $this->assertEquals(1, $timesCalled);
     }
 
     public function testUpdateMetadataFunc()
