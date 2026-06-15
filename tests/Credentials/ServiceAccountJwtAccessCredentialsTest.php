@@ -552,4 +552,22 @@ class ServiceAccountJwtAccessCredentialsTest extends TestCase
         $this->assertArrayHasKey('scope', $json);
         $this->assertEquals($json['scope'], implode(' ', $scope));
     }
+
+    public function testJwsJoseHeaderWithoutKid()
+    {
+        $testJson = $this->createTestJson();
+        if (isset($testJson['private_key_id'])) {
+            unset($testJson['private_key_id']);
+        }
+        $sa = new Google\Auth\Credentials\ServiceAccountJwtAccessCredentials($testJson);
+        $metadata = $sa->updateMetadata(['foo' => 'bar'], 'https://example.com/service');
+        $token = str_replace('Bearer ', '', $metadata[Google\Auth\CredentialsLoader::AUTH_METADATA_KEY][0]);
+        
+        list($headerEncoded, $payloadEncoded, $sig) = explode('.', $token);
+        $header = json_decode(base64_decode($headerEncoded), true);
+        
+        $this->assertEquals('RS256', $header['alg']);
+        $this->assertEquals('JWT', $header['typ']);
+        $this->assertArrayNotHasKey('kid', $header);
+    }
 }
